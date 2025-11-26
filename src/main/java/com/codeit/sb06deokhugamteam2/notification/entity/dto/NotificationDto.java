@@ -1,5 +1,6 @@
 package com.codeit.sb06deokhugamteam2.notification.entity.dto;
 
+import com.codeit.sb06deokhugamteam2.notification.entity.Notification;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.Builder;
@@ -8,7 +9,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@Builder
 public class NotificationDto {
   UUID id;
   UUID userId;
@@ -18,4 +18,18 @@ public class NotificationDto {
   Boolean confirmed;
   Instant createdAt;
   Instant updatedAt;
+
+  public NotificationDto(Notification notification) {
+    this.id = notification.getId();
+    this.userId = notification.getUserId();
+    this.reviewId = notification.getReviewId();
+    this.reviewTitle = notification.getReviewTitle();
+    this.content = notification.getContent();
+    this.createdAt = notification.getCreatedAt();
+    this.updatedAt = notification.getConfirmedAt();
+    this.confirmed = false;
+
+    if(this.createdAt.isBefore(this.updatedAt))
+      this.confirmed = true;
+  }
 }

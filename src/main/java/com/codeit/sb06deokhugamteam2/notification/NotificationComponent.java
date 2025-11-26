@@ -30,17 +30,7 @@ public class NotificationComponent {
       notification.setContent(request.content());
 
       Notification saved = repository.save(notification);
-      NotificationDto notificationDto = NotificationDto.builder()
-          .id(saved.getId())
-          .userId(saved.getUserId())
-          .reviewId(saved.getReviewId())
-          .reviewTitle(saved.getReviewTitle())
-          .content(saved.getContent())
-          .createdAt(saved.getCreatedAt())
-          .updatedAt(saved.getConfirmedAt())
-          .confirmed(false)
-          .build();
-
+      NotificationDto notificationDto = new NotificationDto(saved);
       return notificationDto;
     }
     catch (Exception e)
