@@ -3,6 +3,7 @@ package com.codeit.sb06deokhugamteam2.book.service;
 import com.codeit.sb06deokhugamteam2.book.dto.request.BookCreateRequest;
 import com.codeit.sb06deokhugamteam2.book.dto.data.BookDto;
 import com.codeit.sb06deokhugamteam2.book.dto.request.BookImageCreateRequest;
+import com.codeit.sb06deokhugamteam2.book.dto.response.NaverBookDto;
 import com.codeit.sb06deokhugamteam2.book.entity.Book;
 import com.codeit.sb06deokhugamteam2.book.mapper.BookMapper;
 import com.codeit.sb06deokhugamteam2.book.repository.BookRepository;
@@ -10,8 +11,10 @@ import com.codeit.sb06deokhugamteam2.book.storage.S3Storage;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Optional;
 import java.util.UUID;
