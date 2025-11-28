@@ -12,9 +12,13 @@ spring:
       region:
         static: ${AWS_S3_REGION:ap-northeast-2}
       s3:
-        bucket: ${AWS_S3_BUCKET:aaaa}
+        bucket: ${AWS_S3_BUCKET}
         presigned-url-expiration: ${AWS_S3_PRESIGNED_URL_EXPIRATION:600}
 
   naver:
-    client-id: ${NAVER_CLIENT_ID:aaaa}
-    client-secret: ${NAVER_CLIENT_SECRET:aaaa}
+    client-id: ${NAVER_CLIENT_ID}
+    client-secret: ${NAVER_CLIENT_SECRET}
+
+  batch:
+    job:
+      enabled: false
