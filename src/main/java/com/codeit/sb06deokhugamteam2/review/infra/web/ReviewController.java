@@ -1,15 +1,17 @@
 package com.codeit.sb06deokhugamteam2.review.infra.web;
 
 import com.codeit.sb06deokhugamteam2.review.application.ReviewService;
+import com.codeit.sb06deokhugamteam2.review.infra.web.dto.CursorPageRequestReviewDto;
+import com.codeit.sb06deokhugamteam2.review.infra.web.dto.CursorPageResponseReviewDto;
 import com.codeit.sb06deokhugamteam2.review.infra.web.dto.ReviewCreateRequest;
 import com.codeit.sb06deokhugamteam2.review.infra.web.dto.ReviewDto;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @Controller
 @RequestMapping("/api/reviews")
@@ -26,5 +28,14 @@ public class ReviewController implements ReviewApi {
     public ResponseEntity<ReviewDto> postReview(@RequestBody @Valid ReviewCreateRequest request) {
         ReviewDto response = reviewService.createReview(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @Override
+    @GetMapping
+    public ResponseEntity<CursorPageResponseReviewDto> getReviews(
+            @ModelAttribute @Valid CursorPageRequestReviewDto request,
+            @RequestHeader(value = "Deokhugam-Request-User-ID") UUID header
+    ) {
+        throw new RuntimeException("Not Implemented");
     }
 }
