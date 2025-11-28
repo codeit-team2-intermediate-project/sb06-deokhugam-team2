@@ -3,15 +3,22 @@ package com.codeit.sb06deokhugamteam2.book;
 import com.codeit.sb06deokhugamteam2.book.client.NaverSearchClient;
 import com.codeit.sb06deokhugamteam2.book.dto.data.BookDto;
 import com.codeit.sb06deokhugamteam2.book.dto.request.BookCreateRequest;
+import com.codeit.sb06deokhugamteam2.book.dto.response.CursorPageResponsePopularBookDto;
 import com.codeit.sb06deokhugamteam2.book.dto.response.NaverBookDto;
+import com.codeit.sb06deokhugamteam2.book.entity.Book;
 import com.codeit.sb06deokhugamteam2.book.repository.BookRepository;
 import com.codeit.sb06deokhugamteam2.book.storage.S3Storage;
+import com.codeit.sb06deokhugamteam2.common.enums.PeriodType;
+import com.codeit.sb06deokhugamteam2.common.enums.RankingType;
+import com.codeit.sb06deokhugamteam2.dashboard.entity.DashBoard;
+import com.codeit.sb06deokhugamteam2.dashboard.repository.DashBoardRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -22,7 +29,9 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -42,11 +51,15 @@ public class BookIntegrationTest {
     @Autowired
     private BookRepository bookRepository;
 
+    @Autowired
+    private DashBoardRepository dashBoardRepository;
+
     @MockitoBean
     private NaverSearchClient naverSearchClient;
 
     @MockitoBean
     private S3Storage s3Storage;
+
 
     @Test
     @DisplayName("Book 생성 API호출 통합 테스트")
@@ -122,5 +135,47 @@ public class BookIntegrationTest {
         assertThat(naverBookDto.getPublishedDate()).isEqualTo(LocalDate.now());
         assertThat(naverBookDto.getDescription()).isEqualTo("description");
         assertThat(naverBookDto.getThumbnailImage()).isEqualTo("Base64 Encoding Image");
+    }
+
+    @Test
+    @DisplayName("인기도서 조회 API 호출 통합 테스트 - 점수는 더미 데이터")
+    void popularBooks_Success() throws Exception {
+        //given
+        for(int i=1; i<=5; i++) {
+            Book book = Book.builder()
+                    .title("title"+i)
+                    .author("author"+i)
+                    .isbn("12345678"+i)
+                    .publisher("publisher"+i)
+                    .publishedDate(LocalDate.now())
+                    .description("description"+i)
+                    .thumbnailUrl("https://test-bucket/test"+i+".jpg")
+                    .build();
+            UUID bookId = bookRepository.saveAndFlush(book).getId();
+
+            DashBoard dashBoard = DashBoard.builder()
+                    .entityId(bookId)
+                    .rank((long) i)
+                    .score(100 - i)
+                    .createdAt(Instant.now())
+                    .rankingType(RankingType.BOOK)
+                    .periodType(PeriodType.ALL_TIME)
+                    .build();
+            dashBoardRepository.saveAndFlush(dashBoard);
+        }
+
+        //when
+        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.request(HttpMethod.GET, "/api/books/popular?period=ALL_TIME&direction=ASC&limit=4")
+                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                .andReturn();
+
+        //then
+        assertThat(result.getResponse().getStatus()).isEqualTo(200);
+        String responseBody = result.getResponse().getContentAsString();
+        CursorPageResponsePopularBookDto cursorDto = objectMapper.readValue(responseBody, CursorPageResponsePopularBookDto.class);
+
+        assertThat(cursorDto.content()).hasSize(4+1);  // 서버에서 +1 조회한 건 hasNext 체크용
+        assertThat(cursorDto.content().get(0).title()).isEqualTo("title1");
+        assertThat(cursorDto.content().get(3).title()).isEqualTo("title4");
     }
 }
