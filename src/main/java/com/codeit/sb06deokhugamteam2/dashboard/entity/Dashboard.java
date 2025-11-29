@@ -20,7 +20,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DashBoard {
+public class Dashboard {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

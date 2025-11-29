@@ -11,16 +11,14 @@ import com.codeit.sb06deokhugamteam2.book.repository.BookRepository;
 import com.codeit.sb06deokhugamteam2.book.storage.S3Storage;
 import com.codeit.sb06deokhugamteam2.common.enums.PeriodType;
 import com.codeit.sb06deokhugamteam2.common.enums.RankingType;
-import com.codeit.sb06deokhugamteam2.dashboard.entity.DashBoard;
-import com.codeit.sb06deokhugamteam2.dashboard.repository.DashBoardRepository;
+import com.codeit.sb06deokhugamteam2.dashboard.entity.Dashboard;
+import com.codeit.sb06deokhugamteam2.dashboard.repository.DashboardRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.hibernate.validator.constraints.ISBN;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -55,7 +53,7 @@ public class BookIntegrationTest {
     private BookRepository bookRepository;
 
     @Autowired
-    private DashBoardRepository dashBoardRepository;
+    private DashboardRepository dashBoardRepository;
 
     @MockitoBean
     private NaverSearchClient naverSearchClient;
@@ -217,7 +215,7 @@ public class BookIntegrationTest {
                     .build();
             UUID bookId = bookRepository.saveAndFlush(book).getId();
 
-            DashBoard dashBoard = DashBoard.builder()
+            Dashboard dashBoard = Dashboard.builder()
                     .entityId(bookId)
                     .rank((long) i)
                     .score(100 - i)

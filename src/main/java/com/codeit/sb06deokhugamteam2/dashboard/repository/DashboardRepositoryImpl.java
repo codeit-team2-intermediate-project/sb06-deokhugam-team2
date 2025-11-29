@@ -2,7 +2,7 @@ package com.codeit.sb06deokhugamteam2.dashboard.repository;
 
 import com.codeit.sb06deokhugamteam2.common.enums.PeriodType;
 import com.codeit.sb06deokhugamteam2.common.enums.RankingType;
-import com.codeit.sb06deokhugamteam2.dashboard.entity.DashBoard;
+import com.codeit.sb06deokhugamteam2.dashboard.entity.Dashboard;
 import com.codeit.sb06deokhugamteam2.dashboard.entity.QDashBoard;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -13,11 +13,12 @@ import java.time.Instant;
 import java.util.List;
 
 @RequiredArgsConstructor
-public class DashBoardRepositoryImpl implements DashBoardRepositoryCustom {
+public class DashboardRepositoryImpl implements DashboardRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
 
-    public List<DashBoard> findPopularBookListByCursor(
+    @Override
+    public List<Dashboard> findPopularBookListByCursor(
             RankingType rankingType,
             PeriodType period,
             String cursor,
