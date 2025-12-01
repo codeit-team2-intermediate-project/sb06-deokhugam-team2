@@ -22,11 +22,11 @@ public class ReviewJpaMapper {
                 .user(user)
                 .rating(snapshot.rating())
                 .content(snapshot.content())
-                .likeCount(snapshot.likeCount())
-                .commentCount(snapshot.commentCount())
+                .likeCount(0)
+                .commentCount(0)
                 .createdAt(snapshot.createdAt())
                 .updatedAt(snapshot.updatedAt())
-                .deleted(snapshot.deleted());
+                .deleted(Boolean.FALSE);
     }
 
     public ReviewSummary toReviewSummary(

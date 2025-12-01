@@ -11,11 +11,8 @@ public class ReviewDomain {
     private final UUID id;
     private final UUID bookId;
     private final UUID userId;
-    private boolean deleted;
     private int rating;
     private String content;
-    private int likeCount;
-    private int commentCount;
     private final Instant createdAt;
     private Instant updatedAt;
 
@@ -23,22 +20,16 @@ public class ReviewDomain {
             UUID id,
             UUID bookId,
             UUID userId,
-            Boolean deleted,
             Integer rating,
             String content,
-            Integer likeCount,
-            Integer commentCount,
             Instant createdAt,
             Instant updatedAt
     ) {
         this.id = requiredId(id);
         this.bookId = requiredBookId(bookId);
         this.userId = requiredUserId(userId);
-        this.deleted = requiredDeleted(deleted);
         this.rating = requiredRating(rating);
         this.content = requiredContent(content);
-        this.likeCount = requireLikeCount(likeCount);
-        this.commentCount = requireCommentCount(commentCount);
         this.createdAt = requiredCreatedAt(createdAt);
         this.updatedAt = requiredUpdatedAt(updatedAt);
     }
@@ -64,13 +55,6 @@ public class ReviewDomain {
         return userId;
     }
 
-    private boolean requiredDeleted(Boolean deleted) {
-        if (deleted == null) {
-            throw new ReviewException("deleted is required");
-        }
-        return deleted;
-    }
-
     private int requiredRating(Integer rating) {
         if (rating == null) {
             throw new ReviewException("rating is required");
@@ -88,13 +72,6 @@ public class ReviewDomain {
         return content;
     }
 
-    private int requireLikeCount(Integer likeCount) {
-        if (likeCount == null) {
-            throw new ReviewException("likeCount is required");
-        }
-        return likeCount;
-    }
-
     private Instant requiredCreatedAt(Instant createdAt) {
         if (createdAt == null) {
             throw new ReviewException("createdAt is required");
@@ -109,22 +86,12 @@ public class ReviewDomain {
         return updatedAt;
     }
 
-    private int requireCommentCount(Integer commentCount) {
-        if (commentCount == null) {
-            throw new ReviewException("commentCount is required");
-        }
-        return commentCount;
-    }
-
     public static ReviewDomain create(CreateReviewCommand command) {
         UUID id = UUID.randomUUID();
         UUID bookId = command.bookId();
         UUID userId = command.userId();
-        Boolean deleted = Boolean.FALSE;
         Integer rating = command.rating();
         String content = command.content();
-        Integer likeCount = 0;
-        Integer commentCount = 0;
         Instant createdAt = Instant.now();
         Instant updatedAt = createdAt;
 
@@ -132,11 +99,8 @@ public class ReviewDomain {
                 id,
                 bookId,
                 userId,
-                deleted,
                 rating,
                 content,
-                likeCount,
-                commentCount,
                 createdAt,
                 updatedAt
         );
@@ -146,11 +110,8 @@ public class ReviewDomain {
         UUID id = snapshot.id();
         UUID bookId = snapshot.bookId();
         UUID userId = snapshot.userId();
-        Boolean deleted = snapshot.deleted();
         Integer rating = snapshot.rating();
         String content = snapshot.content();
-        Integer likeCount = snapshot.likeCount();
-        Integer commentCount = snapshot.commentCount();
         Instant createdAt = snapshot.createdAt();
         Instant updatedAt = snapshot.updatedAt();
 
@@ -158,11 +119,8 @@ public class ReviewDomain {
                 id,
                 bookId,
                 userId,
-                deleted,
                 rating,
                 content,
-                likeCount,
-                commentCount,
                 createdAt,
                 updatedAt
         );
@@ -173,11 +131,8 @@ public class ReviewDomain {
                 id,
                 bookId,
                 userId,
-                deleted,
                 rating,
                 content,
-                likeCount,
-                commentCount,
                 createdAt,
                 updatedAt
         );
@@ -203,11 +158,8 @@ public class ReviewDomain {
             UUID id,
             UUID bookId,
             UUID userId,
-            Boolean deleted,
             Integer rating,
             String content,
-            Integer likeCount,
-            Integer commentCount,
             Instant createdAt,
             Instant updatedAt
     ) {
