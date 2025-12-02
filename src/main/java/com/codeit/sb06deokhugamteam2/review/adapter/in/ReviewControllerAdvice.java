@@ -45,8 +45,8 @@ public class ReviewControllerAdvice {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
-    @ExceptionHandler(DuplicateReviewException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateReviewException(DuplicateReviewException e) {
+    @ExceptionHandler(AlreadyExistsReviewException.class)
+    public ResponseEntity<ErrorResponse> handleAlreadyExistsReviewException(AlreadyExistsReviewException e) {
         log.error(e.getMessage());
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(Instant.now())

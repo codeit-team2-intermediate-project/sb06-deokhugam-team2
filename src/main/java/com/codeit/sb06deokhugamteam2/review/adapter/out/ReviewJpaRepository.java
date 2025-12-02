@@ -17,6 +17,7 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import org.hibernate.Session;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -119,8 +120,8 @@ public class ReviewJpaRepository implements ReviewRepository, QueryReviewPort {
 
     @Override
     public CursorPageResponseReviewDto findAll(CursorPageRequestReviewDto request, UUID requestUserId) {
-        UUID bookId = UUID.fromString(request.bookId());
-        UUID userId = UUID.fromString(request.userId());
+        String bookId = request.bookId();
+        String userId = request.userId();
         String keyword = request.keyword();
         String orderBy = request.orderBy();
         String cursor = request.cursor();
@@ -159,8 +160,8 @@ public class ReviewJpaRepository implements ReviewRepository, QueryReviewPort {
     }
 
     private List<ReviewDto> findAll(
-            UUID bookId,
-            UUID userId,
+            String bookId,
+            String userId,
             String keyword,
             String orderBy,
             String cursor,
@@ -195,12 +196,12 @@ public class ReviewJpaRepository implements ReviewRepository, QueryReviewPort {
                 .fetch();
     }
 
-    private static BooleanExpression bookIdEq(UUID bookId) {
-        return bookId == null ? null : review.book.id.eq(bookId);
+    private static BooleanExpression bookIdEq(String bookId) {
+        return bookId == null ? null : review.book.id.eq(UUID.fromString(bookId));
     }
 
-    private static BooleanExpression userIdEq(UUID userId) {
-        return userId == null ? null : review.user.id.eq(userId);
+    private static BooleanExpression userIdEq(String userId) {
+        return userId == null ? null : review.user.id.eq(UUID.fromString(userId));
     }
 
     private static BooleanExpression keywordContains(String keyword) {
@@ -284,7 +285,7 @@ public class ReviewJpaRepository implements ReviewRepository, QueryReviewPort {
         return Boolean.FALSE;
     }
 
-    private Long countAll(UUID userId, UUID bookId, String keyword) {
+    private Long countAll(String userId, String bookId, String keyword) {
         Long count = select(review.count())
                 .from(review)
                 .where(
@@ -308,5 +309,23 @@ public class ReviewJpaRepository implements ReviewRepository, QueryReviewPort {
     public void delete(ReviewDomain review) {
         Review deleteReview = em.getReference(Review.class, review.id());
         em.remove(deleteReview);
+    }
+
+    @Override
+    public Optional<ReviewDomain> findByIdWithoutDeleted(UUID reviewId) {
+        String sql = "SELECT * FROM reviews r WHERE r.id = :reviewId";
+        Review found = em.unwrap(Session.class)
+                .createNativeQuery(sql, Review.class)
+                .setParameter("reviewId", reviewId)
+                .getSingleResult();
+        return Optional.ofNullable(found).map(reviewMapper::toReviewDomain);
+    }
+
+    @Override
+    @Transactional
+    public void hardDelete(ReviewDomain review) {
+        em.createNativeQuery("DELETE FROM reviews r WHERE r.id = :reviewId")
+                .setParameter("reviewId", review.id())
+                .executeUpdate();
     }
 }

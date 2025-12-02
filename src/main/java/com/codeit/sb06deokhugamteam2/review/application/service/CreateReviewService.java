@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class CreateReviewService implements CreateReviewUseCase {
 
     private final ReviewService reviewService;
@@ -22,7 +23,6 @@ public class CreateReviewService implements CreateReviewUseCase {
     }
 
     @Override
-    @Transactional
     public ReviewDto createReview(ReviewCreateRequest request) {
         String bookId = request.bookId();
         String userId = request.userId();

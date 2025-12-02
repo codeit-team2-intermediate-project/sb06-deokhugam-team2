@@ -14,4 +14,8 @@ public interface ReviewRepository {
     Optional<ReviewDomain> findById(UUID reviewId);
 
     void delete(ReviewDomain review);
+
+    Optional<ReviewDomain> findByIdWithoutDeleted(UUID reviewId);
+
+    void hardDelete(ReviewDomain review);
 }

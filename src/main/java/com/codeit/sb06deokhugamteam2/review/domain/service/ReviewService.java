@@ -1,7 +1,7 @@
 package com.codeit.sb06deokhugamteam2.review.domain.service;
 
 import com.codeit.sb06deokhugamteam2.review.domain.ReviewDomain;
-import com.codeit.sb06deokhugamteam2.review.domain.exception.DuplicateReviewException;
+import com.codeit.sb06deokhugamteam2.review.domain.exception.AlreadyExistsReviewException;
 import com.codeit.sb06deokhugamteam2.review.domain.exception.ReviewBookNotFoundException;
 import com.codeit.sb06deokhugamteam2.review.domain.exception.ReviewNotFoundException;
 import com.codeit.sb06deokhugamteam2.review.domain.exception.ReviewUserNotFoundException;
@@ -44,7 +44,7 @@ public class ReviewService {
             throw new ReviewUserNotFoundException(userId);
         }
         if (reviewRepository.existsByBookIdAndUserId(bookId, userId)) {
-            throw new DuplicateReviewException(bookId);
+            throw new AlreadyExistsReviewException(bookId);
         }
         ReviewDomain newReview = ReviewDomain.create(bookId, userId, rating, content);
         reviewRepository.addReview(newReview);
@@ -63,5 +63,18 @@ public class ReviewService {
                 .orElseThrow(() -> new ReviewNotFoundException(reviewId));
         reviewToDelete.requireOwner(requestUserId);
         reviewRepository.delete(reviewToDelete);
+    }
+
+    public void hardDelete(String reviewId, String requestUserId) {
+        UUID reviewIdUuid = UUID.fromString(reviewId);
+        UUID requestUserIdUuid = UUID.fromString(requestUserId);
+        hardDelete(reviewIdUuid, requestUserIdUuid);
+    }
+
+    private void hardDelete(UUID reviewId, UUID requestUserId) {
+        ReviewDomain reviewToDelete = reviewRepository.findByIdWithoutDeleted(reviewId)
+                .orElseThrow(() -> new ReviewNotFoundException(reviewId));
+        reviewToDelete.requireOwner(requestUserId);
+        reviewRepository.hardDelete(reviewToDelete);
     }
 }

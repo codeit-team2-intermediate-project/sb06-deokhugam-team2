@@ -66,4 +66,14 @@ public class ReviewController implements ReviewApi {
         deleteReviewUseCase.deleteReview(request, header);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
     }
+
+    @Override
+    @DeleteMapping("/{reviewId}/hard")
+    public ResponseEntity<Void> hardDeleteReview(
+            @PathVariable(name = "reviewId") String request,
+            @RequestHeader(value = "Deokhugam-Request-User-ID") String header
+    ) {
+        deleteReviewUseCase.hardDeleteReview(request, header);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+    }
 }

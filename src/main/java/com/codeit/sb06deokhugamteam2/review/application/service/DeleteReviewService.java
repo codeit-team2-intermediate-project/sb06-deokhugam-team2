@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class DeleteReviewService implements DeleteReviewUseCase {
 
     private final ReviewService reviewService;
@@ -15,11 +16,18 @@ public class DeleteReviewService implements DeleteReviewUseCase {
     }
 
     @Override
-    @Transactional
     public void deleteReview(String request, String header) {
         String reviewId = request;
         String requestUserId = header;
 
         reviewService.delete(reviewId, requestUserId);
+    }
+
+    @Override
+    public void hardDeleteReview(String request, String header) {
+        String reviewId = request;
+        String requestUserId = header;
+
+        reviewService.hardDelete(reviewId, requestUserId);
     }
 }
