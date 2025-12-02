@@ -24,5 +24,5 @@ public interface BookRepository extends JpaRepository<Book, UUID>, BookRepositor
 
     List<Book> findAllByCreatedAtAfter(Instant since);
 
-    Optional<Book> findByIsbn(String isbn);
+    Optional<Book> findByIsbnAndDeletedFalse(String isbn);
 }
