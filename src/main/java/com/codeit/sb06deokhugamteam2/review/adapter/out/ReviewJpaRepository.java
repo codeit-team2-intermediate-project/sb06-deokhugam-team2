@@ -1,13 +1,14 @@
 package com.codeit.sb06deokhugamteam2.review.adapter.out;
 
 import com.codeit.sb06deokhugamteam2.book.entity.Book;
+import com.codeit.sb06deokhugamteam2.review.adapter.out.entity.QReview;
 import com.codeit.sb06deokhugamteam2.review.adapter.out.entity.Review;
-import com.codeit.sb06deokhugamteam2.review.application.dto.ReviewDetail;
-import com.codeit.sb06deokhugamteam2.review.application.dto.ReviewSummary;
-import com.codeit.sb06deokhugamteam2.review.application.port.in.query.ReviewPaginationQuery;
-import com.codeit.sb06deokhugamteam2.review.application.port.in.query.ReviewQuery;
-import com.codeit.sb06deokhugamteam2.review.application.port.out.ReviewRepository;
+import com.codeit.sb06deokhugamteam2.review.application.dto.CursorPageRequestReviewDto;
+import com.codeit.sb06deokhugamteam2.review.application.dto.CursorPageResponseReviewDto;
+import com.codeit.sb06deokhugamteam2.review.application.dto.ReviewDto;
+import com.codeit.sb06deokhugamteam2.review.application.port.out.QueryReviewPort;
 import com.codeit.sb06deokhugamteam2.review.domain.ReviewDomain;
+import com.codeit.sb06deokhugamteam2.review.domain.repository.ReviewRepository;
 import com.codeit.sb06deokhugamteam2.user.entity.User;
 import com.querydsl.core.types.*;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -32,7 +33,7 @@ import static com.codeit.sb06deokhugamteam2.user.entity.QUser.user;
 
 @Repository
 @Transactional(readOnly = true)
-public class ReviewJpaRepository implements ReviewRepository {
+public class ReviewJpaRepository implements ReviewRepository, QueryReviewPort {
 
     @PersistenceContext
     private EntityManager em;
@@ -62,28 +63,31 @@ public class ReviewJpaRepository implements ReviewRepository {
     @Override
     @Transactional
     public void addReview(ReviewDomain review) {
+        Review newReview = reviewMapper.toReview(review);
         Book book = em.getReference(Book.class, review.bookId());
         User user = em.getReference(User.class, review.userId());
-        Review newReview = reviewMapper.toReview(review, book, user);
+        newReview = newReview.book(book).user(user);
         em.persist(newReview);
     }
 
     @Override
-    public ReviewDetail findReviewDetailById(UUID reviewId) {
-        return findReviewDetail(null, review.id.eq(reviewId)).fetchOne();
+    public Optional<ReviewDto> findById(UUID reviewId, UUID requestUserId) {
+        ReviewDto review = findById(requestUserId, QReview.review.id.eq(reviewId));
+        return Optional.ofNullable(review);
     }
 
-    private JPAQuery<ReviewDetail> findReviewDetail(UUID requestUserId, Predicate... predicate) {
-        return select(reviewDetailProjection(requestUserId))
+    private ReviewDto findById(UUID requestUserId, Predicate... predicates) {
+        return select(reviewProjection(requestUserId))
                 .from(review)
                 .innerJoin(review.book, book)
                 .innerJoin(review.user, user)
-                .where(predicate);
+                .where(predicates)
+                .fetchOne();
     }
 
-    private static Expression<ReviewDetail> reviewDetailProjection(UUID requestUserId) {
+    private static Expression<ReviewDto> reviewProjection(UUID requestUserId) {
         return Projections.constructor(
-                ReviewDetail.class,
+                ReviewDto.class,
                 review.id,
                 review.book.id,
                 book.title,
@@ -114,22 +118,80 @@ public class ReviewJpaRepository implements ReviewRepository {
     }
 
     @Override
-    public ReviewSummary findReviewSummary(ReviewPaginationQuery query) {
-        List<ReviewDetail> reviewDetails = findReviewDetails(query);
-        Long totalElements = findTotalElements(query);
-        return reviewMapper.toReviewSummary(reviewDetails, totalElements, query);
+    public CursorPageResponseReviewDto findAll(CursorPageRequestReviewDto request, UUID requestUserId) {
+        UUID bookId = UUID.fromString(request.bookId());
+        UUID userId = UUID.fromString(request.userId());
+        String keyword = request.keyword();
+        String orderBy = request.orderBy();
+        String cursor = request.cursor();
+        Instant after = request.after();
+        String direction = request.direction();
+        Integer limit = request.limit();
+
+        List<ReviewDto> reviews = findAll(
+                bookId,
+                userId,
+                keyword,
+                orderBy,
+                cursor,
+                after,
+                direction,
+                limit,
+                requestUserId
+        );
+        Long count = countAll(userId, bookId, keyword);
+
+        List<ReviewDto> content = extractContent(reviews, limit);
+        String nextCursor = extractNextCursor(reviews, limit, orderBy);
+        String nextAfter = extractNextAfter(reviews, limit);
+        Integer size = calculateSize(reviews, limit);
+        Long totalElements = count;
+        Boolean hasNext = calculateHasNext(reviews, limit);
+
+        return new CursorPageResponseReviewDto(
+                content,
+                nextCursor,
+                nextAfter,
+                size,
+                totalElements,
+                hasNext
+        );
     }
 
-    private List<ReviewDetail> findReviewDetails(ReviewPaginationQuery query) {
+    private List<ReviewDto> findAll(
+            UUID bookId,
+            UUID userId,
+            String keyword,
+            String orderBy,
+            String cursor,
+            Instant after,
+            String direction,
+            Integer limit,
+            UUID requestUserId
+    ) {
         Predicate[] predicates = {
-                bookIdEq(query.bookId()),
-                userIdEq(query.userId()),
-                keywordContains(query.keyword()),
-                cursorExpressions(query)
+                bookIdEq(bookId),
+                userIdEq(userId),
+                keywordContains(keyword),
+                cursorExpressions(orderBy, cursor, after, direction)
         };
-        return findReviewDetail(query.requestUserId(), predicates)
-                .orderBy(orderByExpressions(query))
-                .limit(query.limit() + 1)
+        return findAll(requestUserId, predicates, orderBy, direction, limit);
+    }
+
+    private List<ReviewDto> findAll(
+            UUID requestUserId,
+            Predicate[] predicates,
+            String orderBy,
+            String direction,
+            Integer limit
+    ) {
+        return select(reviewProjection(requestUserId))
+                .from(review)
+                .innerJoin(review.book, book)
+                .innerJoin(review.user, user)
+                .where(predicates)
+                .orderBy(orderByExpressions(orderBy, direction))
+                .limit(limit + 1)
                 .fetch();
     }
 
@@ -150,57 +212,89 @@ public class ReviewJpaRepository implements ReviewRepository {
                 .or(review.book.title.containsIgnoreCase(keyword));
     }
 
-    private static BooleanExpression cursorExpressions(ReviewPaginationQuery query) {
-        if (query.cursor() == null || query.after() == null) {
+    private static BooleanExpression cursorExpressions(String orderBy, String cursor, Instant after, String direction) {
+        if (cursor == null || after == null) {
             return null;
         }
 
-        Instant afterCursor = query.after();
-        if ("rating".equals(query.orderBy())) {
-            int ratingCursor = Integer.parseInt(query.cursor());
-            if ("ASC".equals(query.direction())) {
+        if ("rating".equals(orderBy)) {
+            int ratingCursor = Integer.parseInt(cursor);
+            if ("ASC".equals(direction)) {
                 return review.rating.gt(ratingCursor)
-                        .or(review.rating.eq(ratingCursor).and(review.createdAt.gt(afterCursor)));
+                        .or(review.rating.eq(ratingCursor).and(review.createdAt.goe(after)));
             }
             return review.rating.lt(ratingCursor)
-                    .or(review.rating.eq(ratingCursor).and(review.createdAt.lt(afterCursor)));
+                    .or(review.rating.eq(ratingCursor).and(review.createdAt.loe(after)));
         }
-        if ("ASC".equals(query.direction())) {
-            return review.createdAt.gt(afterCursor);
+        if ("ASC".equals(direction)) {
+            return review.createdAt.goe(after);
         }
-        return review.createdAt.lt(afterCursor);
+        return review.createdAt.loe(after);
     }
 
-    private static OrderSpecifier<?>[] orderByExpressions(ReviewPaginationQuery query) {
+    private static OrderSpecifier<?>[] orderByExpressions(String orderBy, String direction) {
         List<OrderSpecifier<?>> orderSpecifiers = new ArrayList<>();
 
-        if ("rating".equals(query.orderBy())) {
-            var orderByExpression = new OrderSpecifier<>(Order.valueOf(query.direction()), review.rating);
+        if ("rating".equals(orderBy)) {
+            var orderByExpression = new OrderSpecifier<>(Order.valueOf(direction), review.rating);
             orderSpecifiers.add(orderByExpression);
         }
-        var orderByExpression = new OrderSpecifier<>(Order.valueOf(query.direction()), review.createdAt);
+        var orderByExpression = new OrderSpecifier<>(Order.valueOf(direction), review.createdAt);
         orderSpecifiers.add(orderByExpression);
 
         return orderSpecifiers.toArray(OrderSpecifier[]::new);
     }
 
-    private Long findTotalElements(ReviewPaginationQuery query) {
-        Long totalElements = select(review.count())
+    private static List<ReviewDto> extractContent(List<ReviewDto> reviews, Integer limit) {
+        int size = calculateSize(reviews, limit);
+        return reviews.subList(0, size);
+    }
+
+    private static int calculateSize(List<ReviewDto> reviews, Integer limit) {
+        if (reviews.isEmpty()) {
+            return 0;
+        }
+        if (reviews.size() <= limit) {
+            return reviews.size();
+        }
+        return limit;
+    }
+
+    private static String extractNextCursor(List<ReviewDto> reviews, Integer limit, String orderBy) {
+        if (reviews.size() <= limit) {
+            return null;
+        }
+        if ("rating".equals(orderBy)) {
+            return reviews.get(limit).rating().toString();
+        }
+        return reviews.get(limit).createdAt().toString();
+    }
+
+    private static String extractNextAfter(List<ReviewDto> reviews, Integer limit) {
+        if (reviews.size() <= limit) {
+            return null;
+        }
+        return reviews.get(limit).createdAt().toString();
+    }
+
+    private static Boolean calculateHasNext(List<ReviewDto> reviews, Integer limit) {
+        if (reviews.size() > limit) {
+            return Boolean.TRUE;
+        }
+        return Boolean.FALSE;
+    }
+
+    private Long countAll(UUID userId, UUID bookId, String keyword) {
+        Long count = select(review.count())
                 .from(review)
                 .where(
-                        userIdEq(query.userId()),
-                        bookIdEq(query.bookId()),
-                        keywordContains(query.keyword())
+                        userIdEq(userId),
+                        bookIdEq(bookId),
+                        keywordContains(keyword)
                 )
                 .fetchOne();
 
-        return totalElements == null ? 0L : totalElements;
-    }
-
-    @Override
-    public ReviewDetail findReviewDetail(ReviewQuery query) {
-        return findReviewDetail(query.requestUserId(), review.id.eq(query.reviewId()))
-                .fetchOne();
+        return count == null ? 0L : count;
     }
 
     @Override

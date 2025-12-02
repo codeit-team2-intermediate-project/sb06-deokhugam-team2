@@ -1,7 +1,7 @@
 package com.codeit.sb06deokhugamteam2.review.adapter.out;
 
 import com.codeit.sb06deokhugamteam2.book.entity.Book;
-import com.codeit.sb06deokhugamteam2.review.application.port.out.BookRepository;
+import com.codeit.sb06deokhugamteam2.review.domain.repository.BookRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Component;
@@ -24,7 +24,7 @@ public class BookJpaRepository implements BookRepository {
 
     @Override
     @Transactional
-    public void updateOnReviewCreation(UUID bookId, int rating) {
+    public void updateForReviewCreation(UUID bookId, int rating) {
         Book book = em.find(Book.class, bookId);
         book.incrementReviewCount();
         book.plusRating(rating);

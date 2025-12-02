@@ -1,56 +1,36 @@
 package com.codeit.sb06deokhugamteam2.review.application.service;
 
-import com.codeit.sb06deokhugamteam2.review.application.dto.ReviewDetail;
+import com.codeit.sb06deokhugamteam2.review.application.dto.ReviewCreateRequest;
+import com.codeit.sb06deokhugamteam2.review.application.dto.ReviewDto;
 import com.codeit.sb06deokhugamteam2.review.application.port.in.CreateReviewUseCase;
-import com.codeit.sb06deokhugamteam2.review.application.port.in.command.CreateReviewCommand;
-import com.codeit.sb06deokhugamteam2.review.application.port.out.BookRepository;
-import com.codeit.sb06deokhugamteam2.review.application.port.out.ReviewRepository;
-import com.codeit.sb06deokhugamteam2.review.application.port.out.UserRepository;
+import com.codeit.sb06deokhugamteam2.review.application.port.out.QueryReviewPort;
 import com.codeit.sb06deokhugamteam2.review.domain.ReviewDomain;
-import com.codeit.sb06deokhugamteam2.review.domain.exception.DuplicateReviewException;
-import com.codeit.sb06deokhugamteam2.review.domain.exception.ReviewBookNotFoundException;
-import com.codeit.sb06deokhugamteam2.review.domain.exception.ReviewUserNotFoundException;
+import com.codeit.sb06deokhugamteam2.review.domain.exception.ReviewNotFoundException;
+import com.codeit.sb06deokhugamteam2.review.domain.service.ReviewService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.UUID;
 
 @Service
 public class CreateReviewService implements CreateReviewUseCase {
 
-    private final BookRepository bookRepository;
-    private final UserRepository userRepository;
-    private final ReviewRepository reviewRepository;
+    private final ReviewService reviewService;
+    private final QueryReviewPort queryReviewPort;
 
-    public CreateReviewService(
-            BookRepository bookRepository,
-            UserRepository userRepository,
-            ReviewRepository reviewRepository
-    ) {
-        this.bookRepository = bookRepository;
-        this.userRepository = userRepository;
-        this.reviewRepository = reviewRepository;
+    public CreateReviewService(ReviewService reviewService, QueryReviewPort queryReviewPort) {
+        this.reviewService = reviewService;
+        this.queryReviewPort = queryReviewPort;
     }
 
     @Override
     @Transactional
-    public ReviewDetail createReview(CreateReviewCommand command) {
-        UUID bookId = command.bookId();
-        UUID userId = command.userId();
+    public ReviewDto createReview(ReviewCreateRequest request) {
+        String bookId = request.bookId();
+        String userId = request.userId();
+        Integer rating = request.rating();
+        String content = request.content();
 
-        if (!bookRepository.existsById(bookId)) {
-            throw new ReviewBookNotFoundException(bookId);
-        }
-        if (!userRepository.existsById(userId)) {
-            throw new ReviewUserNotFoundException(userId);
-        }
-        if (reviewRepository.existsByBookIdAndUserId(bookId, userId)) {
-            throw new DuplicateReviewException(bookId);
-        }
-
-        ReviewDomain newReview = ReviewDomain.create(command);
-        reviewRepository.addReview(newReview);
-        bookRepository.updateOnReviewCreation(newReview.bookId(), newReview.rating());
-        return reviewRepository.findReviewDetailById(newReview.id());
+        ReviewDomain newReview = reviewService.create(bookId, userId, rating, content);
+        return queryReviewPort.findById(newReview.id(), null)
+                .orElseThrow(() -> new ReviewNotFoundException(newReview.id()));
     }
 }

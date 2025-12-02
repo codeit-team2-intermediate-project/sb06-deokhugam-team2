@@ -1,6 +1,6 @@
 package com.codeit.sb06deokhugamteam2.review.adapter.out;
 
-import com.codeit.sb06deokhugamteam2.review.application.port.out.UserRepository;
+import com.codeit.sb06deokhugamteam2.review.domain.repository.UserRepository;
 import com.codeit.sb06deokhugamteam2.user.entity.User;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;

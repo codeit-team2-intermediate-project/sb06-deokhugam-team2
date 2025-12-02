@@ -1,0 +1,17 @@
+package com.codeit.sb06deokhugamteam2.review.domain.repository;
+
+import com.codeit.sb06deokhugamteam2.review.domain.ReviewDomain;
+
+import java.util.Optional;
+import java.util.UUID;
+
+public interface ReviewRepository {
+
+    boolean existsByBookIdAndUserId(UUID bookId, UUID userId);
+
+    void addReview(ReviewDomain review);
+
+    Optional<ReviewDomain> findById(UUID reviewId);
+
+    void delete(ReviewDomain review);
+}

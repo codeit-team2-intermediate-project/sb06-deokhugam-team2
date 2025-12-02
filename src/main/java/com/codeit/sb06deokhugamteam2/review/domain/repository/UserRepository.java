@@ -1,4 +1,4 @@
-package com.codeit.sb06deokhugamteam2.review.application.port.out;
+package com.codeit.sb06deokhugamteam2.review.domain.repository;
 
 import java.util.UUID;
 

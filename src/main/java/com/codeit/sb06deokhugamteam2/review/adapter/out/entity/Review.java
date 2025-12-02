@@ -46,7 +46,15 @@ public class Review {
     @Column(name = "comment_count", nullable = false)
     private Integer commentCount;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(
+            fetch = FetchType.LAZY,
+            mappedBy = "review",
+            cascade = {
+                    CascadeType.PERSIST,
+                    CascadeType.MERGE
+            },
+            orphanRemoval = true
+    )
     private Set<ReviewLike> likes = new HashSet<>();
 
     @NotNull

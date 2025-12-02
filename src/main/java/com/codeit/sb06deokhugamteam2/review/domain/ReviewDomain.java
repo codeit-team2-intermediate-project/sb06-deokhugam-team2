@@ -1,6 +1,5 @@
 package com.codeit.sb06deokhugamteam2.review.domain;
 
-import com.codeit.sb06deokhugamteam2.review.application.port.in.command.CreateReviewCommand;
 import com.codeit.sb06deokhugamteam2.review.domain.exception.ReviewException;
 import com.codeit.sb06deokhugamteam2.review.domain.exception.ReviewPermissionDeniedException;
 
@@ -14,6 +13,8 @@ public class ReviewDomain {
     private final UUID userId;
     private int rating;
     private String content;
+    private int likeCount;
+    private int commentCount;
     private final Instant createdAt;
     private Instant updatedAt;
 
@@ -23,6 +24,8 @@ public class ReviewDomain {
             UUID userId,
             Integer rating,
             String content,
+            Integer likeCount,
+            Integer commentCount,
             Instant createdAt,
             Instant updatedAt
     ) {
@@ -31,6 +34,8 @@ public class ReviewDomain {
         this.userId = requiredUserId(userId);
         this.rating = requiredRating(rating);
         this.content = requiredContent(content);
+        this.likeCount = requiredLikeCount(likeCount);
+        this.commentCount = requiredCommentCount(commentCount);
         this.createdAt = requiredCreatedAt(createdAt);
         this.updatedAt = requiredUpdatedAt(updatedAt);
     }
@@ -73,6 +78,20 @@ public class ReviewDomain {
         return content;
     }
 
+    private int requiredLikeCount(Integer likeCount) {
+        if (likeCount == null) {
+            throw new ReviewException("likeCount is required");
+        }
+        return likeCount;
+    }
+
+    private int requiredCommentCount(Integer commentCount) {
+        if (commentCount == null) {
+            throw new ReviewException("commentCount is required");
+        }
+        return commentCount;
+    }
+
     private Instant requiredCreatedAt(Instant createdAt) {
         if (createdAt == null) {
             throw new ReviewException("createdAt is required");
@@ -87,12 +106,10 @@ public class ReviewDomain {
         return updatedAt;
     }
 
-    public static ReviewDomain create(CreateReviewCommand command) {
+    public static ReviewDomain create(UUID bookId, UUID userId, Integer rating, String content) {
         UUID id = UUID.randomUUID();
-        UUID bookId = command.bookId();
-        UUID userId = command.userId();
-        Integer rating = command.rating();
-        String content = command.content();
+        Integer likeCount = 0;
+        Integer commentCount = 0;
         Instant createdAt = Instant.now();
         Instant updatedAt = createdAt;
 
@@ -102,6 +119,8 @@ public class ReviewDomain {
                 userId,
                 rating,
                 content,
+                likeCount,
+                commentCount,
                 createdAt,
                 updatedAt
         );
@@ -113,6 +132,8 @@ public class ReviewDomain {
         UUID userId = snapshot.userId();
         Integer rating = snapshot.rating();
         String content = snapshot.content();
+        Integer likeCount = snapshot.likeCount();
+        Integer commentCount = snapshot.commentCount();
         Instant createdAt = snapshot.createdAt();
         Instant updatedAt = snapshot.updatedAt();
 
@@ -122,6 +143,8 @@ public class ReviewDomain {
                 userId,
                 rating,
                 content,
+                likeCount,
+                commentCount,
                 createdAt,
                 updatedAt
         );
@@ -134,6 +157,8 @@ public class ReviewDomain {
                 userId,
                 rating,
                 content,
+                likeCount,
+                commentCount,
                 createdAt,
                 updatedAt
         );
@@ -155,10 +180,11 @@ public class ReviewDomain {
         return rating;
     }
 
-    public void requireOwner(UUID requestUserId) {
+    public UUID requireOwner(UUID requestUserId) {
         if (!userId.equals(requestUserId)) {
             throw new ReviewPermissionDeniedException(requestUserId);
         }
+        return requestUserId;
     }
 
     public record Snapshot(
@@ -167,6 +193,8 @@ public class ReviewDomain {
             UUID userId,
             Integer rating,
             String content,
+            Integer likeCount,
+            Integer commentCount,
             Instant createdAt,
             Instant updatedAt
     ) {
