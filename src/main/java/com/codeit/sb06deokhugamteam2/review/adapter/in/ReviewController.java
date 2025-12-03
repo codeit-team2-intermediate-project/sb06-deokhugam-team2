@@ -1,12 +1,10 @@
 package com.codeit.sb06deokhugamteam2.review.adapter.in;
 
-import com.codeit.sb06deokhugamteam2.review.application.dto.CursorPageRequestReviewDto;
-import com.codeit.sb06deokhugamteam2.review.application.dto.CursorPageResponseReviewDto;
-import com.codeit.sb06deokhugamteam2.review.application.dto.ReviewCreateRequest;
-import com.codeit.sb06deokhugamteam2.review.application.dto.ReviewDto;
+import com.codeit.sb06deokhugamteam2.review.application.dto.*;
 import com.codeit.sb06deokhugamteam2.review.application.port.in.CreateReviewUseCase;
 import com.codeit.sb06deokhugamteam2.review.application.port.in.DeleteReviewUseCase;
 import com.codeit.sb06deokhugamteam2.review.application.port.in.GetReviewQuery;
+import com.codeit.sb06deokhugamteam2.review.application.port.in.UpdateReviewUseCase;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -19,15 +17,18 @@ public class ReviewController implements ReviewApi {
     private final CreateReviewUseCase createReviewUseCase;
     private final GetReviewQuery getReviewQuery;
     private final DeleteReviewUseCase deleteReviewUseCase;
+    private final UpdateReviewUseCase updateReviewUseCase;
 
     public ReviewController(
             CreateReviewUseCase createReviewUseCase,
             GetReviewQuery getReviewQuery,
-            DeleteReviewUseCase deleteReviewUseCase
+            DeleteReviewUseCase deleteReviewUseCase,
+            UpdateReviewUseCase updateReviewUseCase
     ) {
         this.createReviewUseCase = createReviewUseCase;
         this.getReviewQuery = getReviewQuery;
         this.deleteReviewUseCase = deleteReviewUseCase;
+        this.updateReviewUseCase = updateReviewUseCase;
     }
 
     @Override
@@ -75,5 +76,16 @@ public class ReviewController implements ReviewApi {
     ) {
         deleteReviewUseCase.hardDeleteReview(path, header);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).body(null);
+    }
+
+    @Override
+    @PatchMapping("/{reviewId}")
+    public ResponseEntity<ReviewDto> patchReview(
+            @PathVariable(name = "reviewId") String path,
+            @RequestHeader(name = "Deokhugam-Request-User-ID") String header,
+            @RequestBody ReviewUpdateRequest requestBody
+    ) {
+        ReviewDto response = updateReviewUseCase.updateReview(path, header, requestBody);
+        return ResponseEntity.ok(response);
     }
 }

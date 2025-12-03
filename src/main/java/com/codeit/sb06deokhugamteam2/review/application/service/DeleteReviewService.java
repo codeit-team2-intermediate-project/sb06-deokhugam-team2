@@ -1,9 +1,11 @@
 package com.codeit.sb06deokhugamteam2.review.application.service;
 
 import com.codeit.sb06deokhugamteam2.review.application.port.in.DeleteReviewUseCase;
-import com.codeit.sb06deokhugamteam2.review.domain.service.ReviewService;
+import com.codeit.sb06deokhugamteam2.review.domain.ReviewService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Service
 @Transactional
@@ -17,17 +19,17 @@ public class DeleteReviewService implements DeleteReviewUseCase {
 
     @Override
     public void deleteReview(String path, String header) {
-        String reviewId = path;
-        String requestUserId = header;
+        UUID reviewId = UUID.fromString(path);
+        UUID requestUserId = UUID.fromString(header);
 
-        reviewService.delete(reviewId, requestUserId);
+        reviewService.hideReview(reviewId, requestUserId);
     }
 
     @Override
     public void hardDeleteReview(String path, String header) {
-        String reviewId = path;
-        String requestUserId = header;
+        UUID reviewId = UUID.fromString(path);
+        UUID requestUserId = UUID.fromString(header);
 
-        reviewService.hardDelete(reviewId, requestUserId);
+        reviewService.deleteReview(reviewId, requestUserId);
     }
 }
