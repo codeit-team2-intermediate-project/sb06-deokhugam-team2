@@ -23,6 +23,7 @@ import com.codeit.sb06deokhugamteam2.dashboard.entity.Dashboard;
 import com.codeit.sb06deokhugamteam2.dashboard.repository.DashboardRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +53,7 @@ public class BookService {
     private final S3Storage s3Storage;
     private final BookMapper bookMapper;
     private final BookCursorMapper bookCursorMapper;
-    private final ObjectMapper objectMapper;
+    private final ObjectReader objectReader;
     private final NaverSearchClient naverSearchClient;
 
     @Value("${spring.ocr.api-key}")
@@ -195,7 +196,7 @@ public class BookService {
 
             String json = callOcrApi(image);
 
-            JsonNode root = objectMapper.readTree(json);
+            JsonNode root = objectReader.readTree(json);
 
             String parsedText = root
                     .get("ParsedResults")
