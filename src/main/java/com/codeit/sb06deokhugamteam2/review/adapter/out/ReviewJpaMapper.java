@@ -10,7 +10,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Component
-public class ReviewMapper {
+public class ReviewJpaMapper {
 
     public Review toReview(ReviewDomain review) {
         ReviewDomain.Snapshot snapshot = review.createSnapshot();

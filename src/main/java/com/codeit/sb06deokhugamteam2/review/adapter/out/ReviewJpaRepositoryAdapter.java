@@ -4,11 +4,9 @@ import com.codeit.sb06deokhugamteam2.book.entity.Book;
 import com.codeit.sb06deokhugamteam2.review.adapter.out.entity.QReview;
 import com.codeit.sb06deokhugamteam2.review.adapter.out.entity.Review;
 import com.codeit.sb06deokhugamteam2.review.application.dto.CursorPageRequestReviewDto;
-import com.codeit.sb06deokhugamteam2.review.application.dto.CursorPageResponseReviewDto;
 import com.codeit.sb06deokhugamteam2.review.application.dto.ReviewDto;
-import com.codeit.sb06deokhugamteam2.review.application.port.out.QueryReviewPort;
+import com.codeit.sb06deokhugamteam2.review.application.port.out.ReviewRepositoryPort;
 import com.codeit.sb06deokhugamteam2.review.domain.ReviewDomain;
-import com.codeit.sb06deokhugamteam2.review.domain.port.ReviewRepository;
 import com.codeit.sb06deokhugamteam2.user.entity.User;
 import com.querydsl.core.types.*;
 import com.querydsl.core.types.dsl.BooleanExpression;
@@ -34,14 +32,14 @@ import static com.codeit.sb06deokhugamteam2.user.entity.QUser.user;
 
 @Repository
 @Transactional(readOnly = true)
-public class ReviewJpaRepository implements ReviewRepository, QueryReviewPort {
+public class ReviewJpaRepositoryAdapter implements ReviewRepositoryPort {
 
     @PersistenceContext
     private EntityManager em;
 
-    private final ReviewMapper reviewMapper;
+    private final ReviewJpaMapper reviewMapper;
 
-    public ReviewJpaRepository(ReviewMapper reviewMapper) {
+    public ReviewJpaRepositoryAdapter(ReviewJpaMapper reviewMapper) {
         this.reviewMapper = reviewMapper;
     }
 
@@ -119,7 +117,7 @@ public class ReviewJpaRepository implements ReviewRepository, QueryReviewPort {
     }
 
     @Override
-    public CursorPageResponseReviewDto findAll(CursorPageRequestReviewDto request, UUID requestUserId) {
+    public List<ReviewDto> findAll(CursorPageRequestReviewDto request, UUID requestUserId) {
         String bookId = request.bookId();
         String userId = request.userId();
         String keyword = request.keyword();
@@ -129,7 +127,7 @@ public class ReviewJpaRepository implements ReviewRepository, QueryReviewPort {
         String direction = request.direction();
         Integer limit = request.limit();
 
-        List<ReviewDto> reviews = findAll(
+        return findAll(
                 bookId,
                 userId,
                 keyword,
@@ -139,23 +137,6 @@ public class ReviewJpaRepository implements ReviewRepository, QueryReviewPort {
                 direction,
                 limit,
                 requestUserId
-        );
-        Long count = count(userId, bookId, keyword);
-
-        List<ReviewDto> content = extractContent(reviews, limit);
-        String nextCursor = extractNextCursor(reviews, limit, orderBy);
-        String nextAfter = extractNextAfter(reviews, limit);
-        Integer size = calculateSize(reviews, limit);
-        Long totalElements = count;
-        Boolean hasNext = calculateHasNext(reviews, limit);
-
-        return new CursorPageResponseReviewDto(
-                content,
-                nextCursor,
-                nextAfter,
-                size,
-                totalElements,
-                hasNext
         );
     }
 
@@ -246,46 +227,8 @@ public class ReviewJpaRepository implements ReviewRepository, QueryReviewPort {
         return orderSpecifiers.toArray(OrderSpecifier[]::new);
     }
 
-    private static List<ReviewDto> extractContent(List<ReviewDto> reviews, Integer limit) {
-        int size = calculateSize(reviews, limit);
-        return reviews.subList(0, size);
-    }
-
-    private static int calculateSize(List<ReviewDto> reviews, Integer limit) {
-        if (reviews.isEmpty()) {
-            return 0;
-        }
-        if (reviews.size() <= limit) {
-            return reviews.size();
-        }
-        return limit;
-    }
-
-    private static String extractNextCursor(List<ReviewDto> reviews, Integer limit, String orderBy) {
-        if (reviews.size() <= limit) {
-            return null;
-        }
-        if ("rating".equals(orderBy)) {
-            return reviews.get(limit).rating().toString();
-        }
-        return reviews.get(limit).createdAt().toString();
-    }
-
-    private static String extractNextAfter(List<ReviewDto> reviews, Integer limit) {
-        if (reviews.size() <= limit) {
-            return null;
-        }
-        return reviews.get(limit).createdAt().toString();
-    }
-
-    private static Boolean calculateHasNext(List<ReviewDto> reviews, Integer limit) {
-        if (reviews.size() > limit) {
-            return Boolean.TRUE;
-        }
-        return Boolean.FALSE;
-    }
-
-    private Long count(String userId, String bookId, String keyword) {
+    @Override
+    public long count(String userId, String bookId, String keyword) {
         Long count = select(review.count())
                 .from(review)
                 .where(
@@ -306,7 +249,7 @@ public class ReviewJpaRepository implements ReviewRepository, QueryReviewPort {
 
     @Override
     @Transactional
-    public void delete(ReviewDomain review) {
+    public void softDelete(ReviewDomain review) {
         Review reviewEntity = em.getReference(Review.class, review.id());
         em.remove(reviewEntity);
     }
