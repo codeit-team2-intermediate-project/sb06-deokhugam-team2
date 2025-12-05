@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
 public class BookService {
 
     private final BookRepository bookRepository;
-    private final DashboardRepository dashBoardRepository;
+    private final DashboardRepository dashboardRepository;
     private final S3Storage s3Storage;
     private final BookMapper bookMapper;
     private final BookCursorMapper bookCursorMapper;
@@ -166,7 +166,7 @@ public class BookService {
 
     public CursorPageResponsePopularBookDto getPopularBooks(PeriodType period, String cursor, Instant after, Sort.Direction direction, Integer limit) {
 
-        List<Dashboard> bookDashboard = dashBoardRepository.findPopularBookListByCursor(RankingType.BOOK, period, cursor, after, direction, limit);
+        List<Dashboard> bookDashboard = dashboardRepository.findPopularBookListByCursor(RankingType.BOOK, period, cursor, after, direction, limit);
 
         List<PopularBookDto> popularBookDtoList = new ArrayList<>();
 
@@ -177,8 +177,9 @@ public class BookService {
                             Map.of("bookId", dashboard.getEntityId()),
                             HttpStatus.NOT_FOUND)
                     );
+            BookStats bookStats = book.getBookStats();
             popularBookDtoList.add(
-                    bookMapper.toDto(dashboard, book, period)
+                    bookMapper.toDto(dashboard, book, bookStats, period)
             );
         });
 
