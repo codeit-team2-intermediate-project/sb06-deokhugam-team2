@@ -1,14 +1,16 @@
 package com.codeit.sb06deokhugamteam2.review.application.port.out;
 
-import com.codeit.sb06deokhugamteam2.review.domain.ReviewDomain;
+import com.codeit.sb06deokhugamteam2.review.domain.model.ReviewDomain;
+
+import java.util.UUID;
 
 public interface SaveReviewRepositoryPort {
 
-    void save(ReviewDomain review);
+    void save(ReviewDomain.Snapshot reviewSnapshot);
 
-    void softDelete(ReviewDomain review);
+    void softDelete(UUID reviewId);
 
-    void hardDelete(ReviewDomain review);
+    void hardDelete(UUID reviewId);
 
-    void update(ReviewDomain review);
+    void update(ReviewDomain.Snapshot reviewSnapshot);
 }

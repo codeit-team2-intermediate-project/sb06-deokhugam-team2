@@ -1,8 +1,8 @@
 package com.codeit.sb06deokhugamteam2.review.application.port.out;
 
-import com.codeit.sb06deokhugamteam2.review.application.dto.CursorPageRequestReviewDto;
-import com.codeit.sb06deokhugamteam2.review.application.dto.ReviewDto;
-import com.codeit.sb06deokhugamteam2.review.domain.ReviewDomain;
+import com.codeit.sb06deokhugamteam2.review.application.dto.request.CursorPageRequestReviewDto;
+import com.codeit.sb06deokhugamteam2.review.application.dto.response.ReviewDto;
+import com.codeit.sb06deokhugamteam2.review.domain.model.ReviewDomain;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,4 +21,6 @@ public interface LoadReviewRepositoryPort {
     Optional<ReviewDomain> findById(UUID reviewId);
 
     Optional<ReviewDomain> findByIdWithoutDeleted(UUID reviewId);
+
+    Optional<ReviewDomain> findByIdForUpdate(UUID reviewId);
 }
