@@ -256,18 +256,19 @@ public class ReviewJpaRepository implements LoadReviewPort, SaveReviewPort {
     public void softDelete(UUID reviewId) {
         Review reviewEntity = em.find(Review.class, reviewId);
         reviewEntity.deleted(Boolean.TRUE);
-        em.remove(reviewEntity);
     }
 
     @Override
     public Optional<ReviewDomain.Snapshot> findByIdWithoutDeleted(UUID reviewId) {
         Review reviewEntity = em.unwrap(Session.class)
                 .createNativeQuery("""
-                        SELECT {r.*}, {rs.*}
+                        SELECT r.*, rs.*
                         FROM reviews r
                         INNER JOIN review_stats rs ON r.id = rs.review_id
                         WHERE r.id = :reviewId
                         """, Review.class)
+                .addEntity("r", Review.class)
+                .addJoin("rs", "r.reviewStat")
                 .setParameter("reviewId", reviewId)
                 .getSingleResult();
         return Optional.ofNullable(reviewEntity)
@@ -276,18 +277,8 @@ public class ReviewJpaRepository implements LoadReviewPort, SaveReviewPort {
 
     @Override
     public void hardDelete(UUID reviewId) {
-        em.createNativeQuery("""
-                        DELETE FROM review_stats
-                        WHERE review_id = :reviewId
-                        """)
-                .setParameter("reviewId", reviewId)
-                .executeUpdate();
-        em.createNativeQuery("""
-                        DELETE FROM reviews
-                        WHERE id = :reviewId
-                        """)
-                .setParameter("reviewId", reviewId)
-                .executeUpdate();
+        Review reviewEntity = em.getReference(Review.class, reviewId);
+        em.remove(reviewEntity);
     }
 
     @Override
