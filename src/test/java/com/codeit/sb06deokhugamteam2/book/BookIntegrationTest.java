@@ -18,6 +18,11 @@ import com.codeit.sb06deokhugamteam2.dashboard.repository.DashboardRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.batch.core.*;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,6 +34,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -59,6 +65,12 @@ public class BookIntegrationTest {
 
     @Autowired
     private DashboardRepository dashBoardRepository;
+
+    @Autowired
+    private JobLauncher jobLauncher;
+
+    @Autowired
+    private Job createRankingBooksJob;
 
     @MockitoBean
     private NaverSearchClient naverSearchClient;
@@ -289,5 +301,25 @@ public class BookIntegrationTest {
         assertThat(bookDto.getPublishedDate()).isEqualTo(book.getPublishedDate());
         assertThat(bookDto.getDescription()).isEqualTo(book.getDescription());
         assertThat(bookDto.getThumbnailUrl()).isEqualTo(book.getThumbnailUrl());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @DisplayName("인기도서 job 실행 통합 테스트")
+    void createPopularBooksJob_Success()
+            throws JobInstanceAlreadyCompleteException, JobExecutionAlreadyRunningException, JobParametersInvalidException, JobRestartException {
+
+        List<PeriodType> periods = List.of(PeriodType.DAILY, PeriodType.WEEKLY, PeriodType.MONTHLY, PeriodType.ALL_TIME);
+
+        for(PeriodType period: periods) {
+            JobParameters params = new JobParametersBuilder()
+                    .addString("periodType", period.name())
+                    .addLong("time", System.currentTimeMillis())
+                    .toJobParameters();
+
+            JobExecution execution = jobLauncher.run(createRankingBooksJob, params);
+
+            assertThat(execution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
+        }
     }
 }
