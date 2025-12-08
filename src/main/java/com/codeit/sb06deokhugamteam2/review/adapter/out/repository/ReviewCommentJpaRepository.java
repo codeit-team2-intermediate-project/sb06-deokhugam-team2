@@ -15,11 +15,7 @@ public class ReviewCommentJpaRepository implements SaveReviewCommentPort {
 
     @Override
     public void softDelete(UUID reviewId) {
-        em.createNativeQuery("""
-                        UPDATE comments
-                        SET deleted = true
-                        WHERE review_id = :reviewId
-                        """)
+        em.createQuery("UPDATE Comment c SET c.deleted = true WHERE c.review.id = :reviewId")
                 .setParameter("reviewId", reviewId)
                 .executeUpdate();
     }
