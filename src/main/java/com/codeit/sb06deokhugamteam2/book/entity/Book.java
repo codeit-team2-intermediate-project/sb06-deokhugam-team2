@@ -54,6 +54,10 @@ public class Book {
     @Setter
     private BookStats bookStats;
 
+    @Version
+    @Column(name = "version", nullable = false)
+    private Integer version;
+
     @Builder.Default
     @OneToMany(
             mappedBy = "book",
@@ -72,8 +76,9 @@ public class Book {
     @Column(nullable = false, name = "updated_at")
     private Instant updatedAt;
 
+    @Builder.Default
     @Column(nullable = false)
-    private Boolean deleted;
+    private Boolean deleted = false;
 
     public void updateThumbnailUrl(String thumbnailUrl) {
         this.thumbnailUrl = thumbnailUrl;

@@ -10,12 +10,14 @@ import com.codeit.sb06deokhugamteam2.book.dto.response.NaverBookDto;
 import com.codeit.sb06deokhugamteam2.book.entity.Book;
 import com.codeit.sb06deokhugamteam2.book.fixture.BookFixture;
 import com.codeit.sb06deokhugamteam2.book.repository.BookRepository;
+import com.codeit.sb06deokhugamteam2.book.service.BookService;
 import com.codeit.sb06deokhugamteam2.book.storage.S3Storage;
 import com.codeit.sb06deokhugamteam2.common.enums.PeriodType;
 import com.codeit.sb06deokhugamteam2.common.enums.RankingType;
 import com.codeit.sb06deokhugamteam2.dashboard.entity.Dashboard;
 import com.codeit.sb06deokhugamteam2.dashboard.repository.DashboardRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.core.*;
@@ -26,6 +28,7 @@ import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
@@ -42,12 +45,18 @@ import org.springframework.util.MultiValueMap;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -71,6 +80,9 @@ public class BookIntegrationTest {
 
     @Autowired
     private Job createRankingBooksJob;
+
+    @Autowired
+    private BookService bookService;
 
     @MockitoBean
     private NaverSearchClient naverSearchClient;
@@ -321,5 +333,133 @@ public class BookIntegrationTest {
 
             assertThat(execution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
         }
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @DisplayName("도서 업데이트 동시 요청 - 낙관적 락 예외 발생 통합 테스트")
+    void updateBook_OptimisticLockException() throws Exception {
+        // given
+        Book book = BookFixture.createBook(1);
+        Book savedBook = bookRepository.save(book);
+        UUID bookId = savedBook.getId();
+
+        when(s3Storage.getThumbnail(anyString())).thenReturn("https://test-bucket/updated.jpg");
+
+        int threadCount = 100;
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(threadCount);
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
+
+        // when
+        for (int i = 0; i < threadCount; i++) {
+            executorService.submit(() -> {
+                try {
+                    startLatch.await(); // 대기
+
+                    BookUpdateRequest bookUpdateRequest = new BookUpdateRequest();
+                    bookUpdateRequest.setTitle("title " + Thread.currentThread().getId());
+                    bookUpdateRequest.setAuthor("author " + Thread.currentThread().getId());
+                    bookUpdateRequest.setDescription("description " + Thread.currentThread().getId());
+                    bookUpdateRequest.setPublisher("publisher " + Thread.currentThread().getId());
+                    bookUpdateRequest.setPublishedDate(LocalDate.now());
+
+                    bookService.update(bookId, bookUpdateRequest, Optional.empty());
+
+                    successCount.incrementAndGet();
+                } catch (OptimisticLockingFailureException e) {
+                    failCount.incrementAndGet();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+        }
+
+        startLatch.countDown(); // 시작 신호
+        doneLatch.await();      // 모든 작업 완료 대기
+        executorService.shutdown();
+
+        // then
+        int finalVersion = bookRepository.findById(bookId).get().getVersion();
+
+        /*
+        완벽히 동시 요청이 가지 않을 수 있음
+        순차적으로 요청이 간다면 버전이 증가할 것이고 업데이트 성공 횟수는 최종 버전과 같아야 함
+        동시 요청이 간다면 낙관적 락 예외가 발생하여 실패 횟수가 늘어날 것임
+         */
+        assertThat(successCount.get()).isEqualTo(finalVersion);
+        assertThat(failCount.get()).isEqualTo(threadCount - finalVersion);
+
+        // cleanup
+        bookService.deleteSoft(bookId);
+        bookService.deleteHard(bookId);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @DisplayName("도서 업데이트와 도서 논리삭제가 동시에 발생하는 경우 - 낙관적 락 예외 발생 통합 테스트")
+    void updateAndDeleteBook_OptimisticLockException() throws Exception {
+        // given
+        Book book = BookFixture.createBook(1);
+        Book savedBook = bookRepository.save(book);
+        UUID bookId = savedBook.getId();
+
+        when(s3Storage.getThumbnail(anyString())).thenReturn("https://test-bucket/updated.jpg");
+
+        int threadCount = 2;
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        CountDownLatch startLatch = new CountDownLatch(1);
+        CountDownLatch doneLatch = new CountDownLatch(threadCount);
+
+        // when
+        executorService.submit(() -> {
+            try {
+                startLatch.await(); // 대기
+
+                BookUpdateRequest bookUpdateRequest = new BookUpdateRequest();
+                bookUpdateRequest.setTitle("title " + Thread.currentThread().getId());
+                bookUpdateRequest.setAuthor("author " + Thread.currentThread().getId());
+                bookUpdateRequest.setDescription("description " + Thread.currentThread().getId());
+                bookUpdateRequest.setPublisher("publisher " + Thread.currentThread().getId());
+                bookUpdateRequest.setPublishedDate(LocalDate.now());
+
+                bookService.update(bookId, bookUpdateRequest, Optional.empty());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                doneLatch.countDown();
+            }
+        });
+
+        executorService.submit(() -> {
+            try {
+                startLatch.await();
+
+                bookService.deleteSoft(bookId);     // @Retryable 적용되어 리트라이 시도됨
+
+            } catch (OptimisticLockingFailureException e) {
+                System.err.println("논리 삭제 리트라이 최종 실패: " + e.getMessage());
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                doneLatch.countDown();
+            }
+        });
+
+        startLatch.countDown();
+        doneLatch.await();
+        executorService.shutdown();
+
+        // then
+        Book resultBook = bookRepository.findById(bookId).orElse(null);
+        assertThat(resultBook).isNull();
+
+        // cleanup
+        bookService.deleteHard(bookId);
     }
 }
