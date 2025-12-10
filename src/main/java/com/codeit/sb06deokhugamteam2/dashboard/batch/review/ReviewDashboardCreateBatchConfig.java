@@ -71,7 +71,7 @@ public class ReviewDashboardCreateBatchConfig {
                 .name("createPopularReviewReader")
                 .entityManagerFactory(entityManagerFactory)
                 .queryString("""
-                        SELECT new com.example.ReviewReaderItemDto(
+                        SELECT new com.codeit.sb06deokhugamteam2.dashboard.dto.data.ReviewReaderItemDto(
                             r.id,
                             (COUNT(lk.id) * 0.3) + (COUNT(c.id) * 0.7)
                         )

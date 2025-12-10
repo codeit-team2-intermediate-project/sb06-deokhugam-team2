@@ -13,6 +13,7 @@ import com.codeit.sb06deokhugamteam2.user.entity.QUser;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -85,8 +86,8 @@ public class DashboardRepositoryImpl implements DashboardRepositoryCustom {
     }
 
     @Override
-    public Slice<PopularReviewDto> findPopularReviews(PeriodType periodType, String direction, String cursor,
-                                                      String after, int limit, Instant startDate, Instant endDate) {
+    public Slice<PopularReviewDto> findPopularReviews(PeriodType periodType, String direction, Long cursor,
+                                                      Instant after, int limit, Instant startDate, Instant endDate) {
 
         OrderSpecifier<?> primaryOrder = getPrimaryOrder(direction);
         OrderSpecifier<?> secondaryOrder = getSecondaryOrder(direction);
@@ -110,7 +111,8 @@ public class DashboardRepositoryImpl implements DashboardRepositoryCustom {
                         .on(book.deleted.isFalse())
                         .innerJoin(review.user, user)
                         .on(user.deletedAt.isNull())
-                        .where(dashboard.periodType.eq(periodType).and(dashboard.createdAt.between(startDate, endDate)))
+                        .where(dashboard.periodType.eq(periodType).and(dashboard.createdAt.between(startDate, endDate)),
+                                getCursorAndAfterCondition(direction, cursor, after))
                         .groupBy(dashboard.id, review.id, user.id, book.id)
                         .orderBy(primaryOrder, secondaryOrder)
                         .limit(limit + 1)
@@ -122,6 +124,20 @@ public class DashboardRepositoryImpl implements DashboardRepositoryCustom {
         }
 
         return new SliceImpl<>(popularReviewDtos, Pageable.unpaged(), hasNext);
+    }
+
+    private BooleanExpression getCursorAndAfterCondition(String direction, Long cursor, Instant after) {
+        if (cursor == null || after == null) {
+            return null;
+        }
+
+        if (direction.equalsIgnoreCase("ASC")) {
+            return dashboard.rank.gt(cursor)
+                    .or(dashboard.rank.eq(cursor).and(dashboard.createdAt.after(after)));
+        } else {
+            return dashboard.rank.lt(cursor)
+                    .or(dashboard.rank.eq(cursor).and(dashboard.createdAt.before(after)));
+        }
     }
 
     private OrderSpecifier<?> getPrimaryOrder(String direction) {

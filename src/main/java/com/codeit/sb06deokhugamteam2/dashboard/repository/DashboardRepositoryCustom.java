@@ -24,8 +24,8 @@ public interface DashboardRepositoryCustom {
     Slice<PopularReviewDto> findPopularReviews(
             PeriodType periodType,
             String direction,
-            String cursor,
-            String after,
+            Long cursor,
+            Instant after,
             int limit,
             Instant startDate,
             Instant endDate

@@ -5,6 +5,7 @@ import com.codeit.sb06deokhugamteam2.common.enums.RankingType;
 import com.codeit.sb06deokhugamteam2.dashboard.dto.data.PopularReviewDto;
 import com.codeit.sb06deokhugamteam2.dashboard.dto.response.CursorPageResponsePopularReviewDto;
 import com.codeit.sb06deokhugamteam2.dashboard.repository.DashboardRepository;
+import com.codeit.sb06deokhugamteam2.review.domain.exception.ReviewException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
@@ -14,10 +15,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @Service
-@Transactional
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class DashboardService {
     private final DashboardRepository dashboardRepository;
@@ -27,8 +29,23 @@ public class DashboardService {
         Instant startDate = calculateStartDate(periodType);
         Instant endDate = calculateEndDate();
 
+        Long parseCursor;
+        Instant parseAfter;
+
+        if (cursor != null && after != null) {
+            try {
+                parseCursor = Long.parseLong(cursor);
+                parseAfter = Instant.parse(after);
+            } catch (DateTimeParseException | NumberFormatException e) {
+                throw new ReviewException("cursor와 after의 값을 확인해주세요.");
+            }
+        } else {
+            parseCursor = null;
+            parseAfter = null;
+        }
+
         Slice<PopularReviewDto> popularReviewDtoSlice = dashboardRepository.findPopularReviews(
-                periodType, direction, cursor, after, limit, startDate, endDate
+                periodType, direction, parseCursor, parseAfter, limit, startDate, endDate
         );
 
 
@@ -45,7 +62,14 @@ public class DashboardService {
             nextAfter = null;
         }
 
-            long totalElements = dashboardRepository.countByRankingTypeAndPeriodTypeAndCreatedAtBetween(RankingType.REVIEW, periodType, startDate, endDate);
+        ZoneId zoneId = ZoneId.systemDefault();
+
+        long totalElements = dashboardRepository.countByRankingTypeAndPeriodTypeAndCreatedAtBetween(
+                RankingType.REVIEW,
+                periodType,
+                LocalDate.now().minusDays(1).atStartOfDay(zoneId).toInstant(),
+                LocalDate.now().minusDays(1).atTime(LocalTime.MAX).atZone(zoneId).toInstant()
+        );
 
         CursorPageResponsePopularReviewDto cursorPageResponsePopularReviewDto = CursorPageResponsePopularReviewDto.builder()
                 .nextCursor(nextCursor)
