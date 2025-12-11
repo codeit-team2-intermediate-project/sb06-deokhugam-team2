@@ -1,11 +1,12 @@
 spring:
+  datasource:
+    url: ${DATABASE_URL}
+    username: postgres
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        format_sql: true
-    show-sql: true
+      ddl-auto: none
   sql:
     init:
-      mode: always
+      mode: never
