@@ -60,14 +60,24 @@
 ---
 
 ### 박종건
-- (자신이 개발한 기능에 대한 사진이나 gif 파일 첨부)
-- **관리자 API**
-    - `@PathVariable`을 사용한 동적 라우팅 기능 구현
-    - PATCH, DELETE 요청을 사용하여 학생 정보를 수정하고 탈퇴하는 API 엔드포인트 개발
-- **학생 정보의 CRUD 기능**
-    - Spring Data JPA를 활용한 학생 정보 CRUD API 구현
-- **회원관리 슬라이더**
-    - 학생별 정보 목록을 Carousel 형식으로 조회하는 API 구현
+- **알림 읽기**
+  - 알림 일괄 읽기 기능 구현
+  - 알림 단건 읽기 기능 구현
+- **알림 일괄 읽기 및 삭제**
+    - Spring batch 와 scheduler 를 이용해 읽은지 7일 이상 경과된 알림 삭제
+    - Spring batch 와 scheduler 를 이용해 일괄 알림 읽기
+- **알림 조회**
+    - QueryDSL을 이용해 알림 cursor 페이지네이션 조회
+- **알림 등록**
+  - 리뷰, 댓글 작성 등 타 도메인에서 알림등록 가능하도록 등록 컴포넌트 구현
+- **로깅**
+    - HandlerInterceptor 와 logback 설정을 통한 로깅
+    - MDC 적용
+- **전역오류처리**
+    - RestControllerAdvice 를 이용한 전역 오류 처리
+    - 알림 관련 커스텀 Exception 구현
+- **DDL 관리**
+    - Flyway로 DDL 관리      
 
 ---
 
