@@ -482,4 +482,4 @@ sb06-deokhugam-team2
 ---
 
 ## 프로젝트 회고록  
-(제작한 발표자료 링크 혹은 첨부파일 첨부)
+[발표자료](https://github.com/codeit-team2-intermediate-project/sb06-deokhugam-team2/wiki/%ED%94%84%EB%A1%9C%EC%A0%9D%ED%8A%B8-%EC%B5%9C%EC%A2%85-%EB%B0%9C%ED%91%9C-%EB%B3%B4%EA%B3%A0%EC%84%9C)
