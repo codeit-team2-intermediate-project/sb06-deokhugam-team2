@@ -477,7 +477,7 @@ sb06-deokhugam-team2
 
 ## 구현 홈페이지  
 (개발한 홈페이지에 대한 링크 게시)  
-[서비스 배포 링크](http://deokhugam-lb-635555306.ap-northeast-2.elb.amazonaws.com/index.html#/login)
+[서비스 배포 링크](http://deokhugam-lb-2040232670.ap-northeast-2.elb.amazonaws.com/#/)
 
 ---
 
